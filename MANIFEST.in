@@ -1,0 +1,2 @@
+recursive-include tutorundar_examen/patches *
+recursive-include tutorundar_examen/templates *
