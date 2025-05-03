@@ -1,4 +1,5 @@
 import os
+import subprocess
 from glob import glob
 
 import click
@@ -196,32 +197,51 @@ for path in glob(str(importlib_resources.files("tutorundar_examen") / "patches" 
 # CUSTOM CLI COMMANDS
 #######################################
 
-# Your plugin can also add custom commands directly to the Tutor CLI.
-# These commands are run directly on the user's host computer
-# (unlike jobs, which are run in containers).
+@click.group(name="undar-examen")
+def undar_examen():
+    """Comandos para UNDAR_EXAMEN."""
+    pass
 
-# To define a command group for your plugin, you would define a Click
-# group and then add it to CLI_COMMANDS:
+@undar_examen.command(name="start-authoring")
+@click.option(
+    "--repo",
+    default="https://github.com/DaveARG/frontend-app-authoring.git",
+    help="URL del repositorio a clonar",
+)
+@click.option(
+    "--dir",
+    default="frontend-app-authoring",
+    help="Carpeta destino para el clone",
+)
+def start_authoring(repo: str, dir: str):
+    """Clona, monta y arranca el entorno de authoring."""
+    # 1. Clonar
+    if not os.path.isdir(dir):
+        # Si la carpeta no existe, clona el repositorio y luego hace checkout de la etiqueta
+        subprocess.check_call(["git", "clone", "--branch", "open-release/sumac.2", repo, dir])
+        click.echo("✅ Repo Clonado y Rama/Tag open-release/sumac.2 seleccionada")
+    else:
+        # Si la carpeta existe, hace un pull para actualizar y luego hace checkout de la etiqueta
+        subprocess.check_call(["git", "-C", dir, "fetch", "--all"])
+        subprocess.check_call(["git", "-C", dir, "checkout", "open-release/sumac.2"])
+        subprocess.check_call(["git", "-C", dir, "pull"])
+        click.echo("✅ Repo Actualizado y Rama/Tag open-release/sumac.2 seleccionada")
+    # 2. Mount
+    subprocess.check_call(["tutor", "mounts", "add", f"./{dir}"])
+    # 3. Stop
+    subprocess.check_call(["tutor", "local", "stop"])
+    # 4. Build
+    subprocess.check_call(["tutor", "images", "build", "mfe"])
+    # 5. Start en background
+    subprocess.check_call(["tutor", "local", "start", "-d"])
+    click.echo("Entorno de authoring levantado ✅")
 
+@undar_examen.command(name="remove-mount")
+def remove_mount():
+    """Elimina el montaje al desinstalar o deshabilitar el plugin."""
+    # Asegúrate de quitar el montaje
+    subprocess.check_call(["tutor", "mounts", "remove", "./frontend-app-authoring"])
+    click.echo("Montaje removido ✅")
 
-### @click.group()
-### def undar-examen() -> None:
-###     pass
-
-
-### hooks.Filters.CLI_COMMANDS.add_item(undar-examen)
-
-
-# Then, you would add subcommands directly to the Click group, for example:
-
-
-### @undar-examen.command()
-### def example_command() -> None:
-###     """
-###     This is helptext for an example command.
-###     """
-###     print("You've run an example command.")
-
-
-# This would allow you to run:
-#   $ tutor undar-examen example-command
+# Llama a la función remove_mount si se deshabilita o desinstala el plugin
+hooks.Filters.CLI_COMMANDS.add_item(undar_examen)
