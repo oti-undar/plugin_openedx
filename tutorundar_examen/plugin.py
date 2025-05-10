@@ -8,6 +8,21 @@ from tutor import hooks
 
 from .__about__ import __version__
 
+from tutormfe.hooks import MFE_APPS
+@MFE_APPS.add()
+def _add_exams_mfe(mfes):
+    mfes["examen"] = {
+        "repository": "https://github.com/DaveARG/frontend-app-undar-examen.git",
+        "port": 3100,
+        "version": "main",  # opcional: rama o tag
+    }
+    mfes["authoring"] = {
+        "repository": "https://github.com/DaveARG/frontend-app-authoring.git",
+        "port": 2001,
+        "version": "open-release/sumac.2",  # opcional: rama o tag
+    }
+    return mfes
+
 ########################################
 # CONFIGURATION
 ########################################
