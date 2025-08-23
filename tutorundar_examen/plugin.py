@@ -1,10 +1,12 @@
 import os
 import subprocess
 from glob import glob
-
+import shutil
 import click
 import importlib_resources
 from tutor import hooks
+import stat
+import time
 
 from .__about__ import __version__
 
@@ -105,6 +107,12 @@ hooks.Filters.IMAGES_BUILD.add_items(
         ###     "docker.io/myimage:{{ UNDAR_EXAMEN_VERSION }}",
         ###     (),
         ### ),
+        (
+            "hono-app",
+            ("plugins", "undar-examen", "build", "hono-app"),  # Ruta relativa dentro del directorio del plugin
+            "hono-app:{{ UNDAR_EXAMEN_VERSION }}",
+            [],
+        ),
     ]
 )
 
@@ -217,7 +225,7 @@ def undar_examen():
     """Comandos para UNDAR_EXAMEN."""
     pass
 
-@undar_examen.command(name="start-authoring")
+@undar_examen.command(name="init-authoring")
 @click.option(
     "--repo",
     default="https://github.com/DaveARG/frontend-app-authoring.git",
@@ -228,19 +236,19 @@ def undar_examen():
     default="frontend-app-authoring",
     help="Carpeta destino para el clone",
 )
-def start_authoring(repo: str, dir: str):
+def init_authoring(repo: str, dir: str):
     """Clona, monta y arranca el entorno de authoring."""
     # 1. Clonar
     if not os.path.isdir(dir):
         # Si la carpeta no existe, clona el repositorio y luego hace checkout de la etiqueta
         subprocess.check_call(["git", "clone", "--branch", "open-release/sumac.2", repo, dir])
-        click.echo("✅ Repo Clonado y Rama/Tag open-release/sumac.2 seleccionada")
+        click.echo("✅ Repo Authoring Clonado y Rama/Tag open-release/sumac.2 seleccionada")
     else:
         # Si la carpeta existe, hace un pull para actualizar y luego hace checkout de la etiqueta
         subprocess.check_call(["git", "-C", dir, "fetch", "--all"])
         subprocess.check_call(["git", "-C", dir, "checkout", "open-release/sumac.2"])
         subprocess.check_call(["git", "-C", dir, "pull"])
-        click.echo("✅ Repo Actualizado y Rama/Tag open-release/sumac.2 seleccionada")
+        click.echo("✅ Repo Authoring Actualizado y Rama/Tag open-release/sumac.2 seleccionada")
     # 2. Mount
     subprocess.check_call(["tutor", "mounts", "add", f"./{dir}"])
     # 3. Stop
@@ -251,8 +259,147 @@ def start_authoring(repo: str, dir: str):
     subprocess.check_call(["tutor", "local", "start", "-d"])
     click.echo("Entorno de authoring levantado ✅")
 
-@undar_examen.command(name="remove-mount")
-def remove_mount():
+@undar_examen.command(name="init-examen")
+def init_examen():
+    """Clona, monta y arranca el entorno de examen."""
+    # 3. Stop
+    subprocess.check_call(["tutor", "local", "stop"])
+    # 4. Build
+    subprocess.check_call(["tutor", "images", "build", "mfe", "--no-cache"])
+    # 5. Start en background
+    subprocess.check_call(["tutor", "local", "start", "-d"])
+    click.echo("Entorno de examen levantado ✅")
+
+def remove_readonly(func, path, excinfo):
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
+@undar_examen.command(name="init-hono")
+@click.option(
+    "--repo",
+    default="https://github.com/DaveARG/hono-app.git",
+    help="URL del repositorio a clonar",
+)
+@click.option(
+    "--dir",
+    default="hono-app",
+    help="Carpeta destino para el clone",
+)
+def init_hono(repo: str, dir: str):
+    """Clona, monta y arranca el entorno de hono-app."""
+    # 1. Clonar
+    if not os.path.isdir(dir):
+        # Si la carpeta no existe, clona el repositorio y luego hace checkout de la etiqueta
+        subprocess.check_call(["git", "clone", "--branch", "master", repo, dir])
+        click.echo("✅ Repo hono-app Clonado y Rama/Tag master seleccionada")
+    else:
+        # Si la carpeta existe, hace un pull para actualizar y luego hace checkout de la etiqueta
+        subprocess.check_call(["git", "-C", dir, "fetch", "--all"])
+        subprocess.check_call(["git", "-C", dir, "checkout", "master"])
+        subprocess.check_call(["git", "-C", dir, "pull"])
+        click.echo("✅ Repo hono-app Actualizado y Rama/Tag master seleccionada")
+    
+    # 2. Obtener la ruta del entorno de Tutor
+    result = subprocess.run(
+        ["tutor", "config", "printroot"],
+        stdout=subprocess.PIPE,
+        check=True,
+    )
+    tutor_root = result.stdout.decode("utf-8").strip()
+    
+    # 2.5. Copiar código al contexto de build
+    plugin_build_path = os.path.join(tutor_root, "env", "plugins", "undar-examen", "build", "hono-app")
+    if os.path.exists(plugin_build_path):
+        shutil.rmtree(plugin_build_path, onerror=remove_readonly)
+    
+    # Asegurarnos de que copiamos todo el contenido del repo
+    shutil.copytree(dir, plugin_build_path)
+    click.echo(f"📦 Código copiado desde {dir} al contexto de build: {plugin_build_path}")
+    
+    # 3. Stop
+    subprocess.check_call(["tutor", "local", "stop"])
+    # 4. Build
+    subprocess.check_call(["tutor", "images", "build", "hono-app"])
+    click.echo("✅ Build de hono-app completado")
+    # 4.1. Eliminar contenedor hono-app-container si existe
+    subprocess.check_call(["docker", "rm", "-f", "hono-app-container"])
+    click.echo("✅ Contenedor hono-app-container eliminado")
+    # 4.2. Arrancar el contenedor
+    subprocess.check_call([
+        "docker", "run", "-d", "--name", "hono-app-container",
+        "-p", "3000:3000",
+        "-e", "DATABASE_URL=mysql://mi_usuario:mi_contraseña@tutor_local-mysql-1:3306/mi_nueva_bd",
+        "hono-app:19.0.3"
+    ])
+    click.echo("✅ Contenedor hono-app-container arrancado")
+    # 4.3. Conectar el contenedor al network tutor_default
+    subprocess.check_call(["docker", "network", "connect", "tutor_local_default", "hono-app-container"])
+    click.echo("✅ Contenedor hono-app-container conectado al network tutor_default")
+    # 5. Start en background
+    subprocess.check_call(["tutor", "local", "start", "-d"])
+    click.echo("✅ Entorno de hono-app levantado")
+    
+    # Esperar a que MySQL esté disponible
+    click.echo("Esperando a que MySQL esté disponible...")
+    max_retries = 20
+    retry_interval = 3  # segundos
+    for i in range(max_retries):
+        try:
+            # Prueba la conexión al contenedor MySQL
+            result = subprocess.run(
+                ["docker", "exec", "tutor_local-mysql-1", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--silent"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False
+            )
+            if result.returncode == 0:
+                click.echo("✅ MySQL está disponible")
+                break
+        except Exception as e:
+            pass
+        click.echo(f"Esperando a MySQL... intento {i+1}/{max_retries}")
+        time.sleep(retry_interval)
+        if i == max_retries - 1:
+            click.echo("❌ No se pudo establecer conexión con MySQL después de varios intentos")
+            return
+
+    # 6. Ejecutar migraciones y seed dentro del contenedor
+    subprocess.check_call([
+        "docker", "exec", "hono-app-container",
+        "sh", "-c",
+        "npm run migrate:fresh:linux"
+    ])
+    click.echo("✅ Migraciones y seeders ejecutados dentro del contenedor")
+
+@undar_examen.command(name="initdb")
+def initdb():
+    """Inicializa la base de datos con el usuario y contraseña del entorno."""
+    import json
+
+    # Obtener la contraseña root de MySQL desde la configuración de Tutor
+    result = subprocess.run(
+        ["tutor", "config", "printvalue", "MYSQL_ROOT_PASSWORD"],
+        stdout=subprocess.PIPE,
+        check=True,
+    )
+    mysql_root_password = result.stdout.decode("utf-8").strip()
+
+    comandos = [
+        "CREATE DATABASE IF NOT EXISTS mi_nueva_bd;",
+        "CREATE USER IF NOT EXISTS 'mi_usuario'@'%' IDENTIFIED BY 'mi_contraseña';",
+        "GRANT ALL PRIVILEGES ON *.* TO 'mi_usuario'@'%';",
+        "FLUSH PRIVILEGES;"
+    ]
+
+    for comando in comandos:
+        subprocess.run([
+            "tutor", "local", "exec", "mysql", "--",
+            "mysql", "-u", "root", f"-p{mysql_root_password}", "-e", comando
+        ], check=True)
+
+    click.echo("Base de datos inicializada ✅")
+
+@undar_examen.command(name="uninstall")
+def uninstall():
     """Elimina el montaje al desinstalar o deshabilitar el plugin."""
     # Asegúrate de quitar el montaje
     subprocess.check_call(["tutor", "mounts", "remove", "./frontend-app-authoring"])
