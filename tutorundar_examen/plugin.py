@@ -323,12 +323,20 @@ def init_hono(repo: str, dir: str):
     # 4.1. Eliminar contenedor hono-app-container si existe
     subprocess.check_call(["docker", "rm", "-f", "hono-app-container"])
     click.echo("✅ Contenedor hono-app-container eliminado")
+    # Obtener la contraseña OpenEdx de MySQL desde la configuración de Tutor
+    result = subprocess.run(
+        ["tutor", "config", "printvalue", "OPENEDX_MYSQL_PASSWORD"],
+        stdout=subprocess.PIPE,
+        check=True,
+    )
+    openedx_mysql_password = result.stdout.decode("utf-8").strip()
     # 4.2. Arrancar el contenedor
     subprocess.check_call([
         "docker", "run", "-d", "--name", "hono-app-container",
         "-p", "3000:3000",
-        "-e", "DATABASE_URL=mysql://mi_usuario:mi_contraseña@tutor_local-mysql-1:3306/mi_nueva_bd",
-        "hono-app:19.0.3"
+        "-e", "DATABASE_URL=mysql://undar_user:ESW49Nc9z5kAZYtP@tutor_local-mysql-1:3306/undar_plugin_examen",
+        "-e", f"DATABASE_URL_OPEN_EDX=mysql://openedx:{openedx_mysql_password}@tutor_local-mysql-1:3306/openedx",
+        "hono-app:19.0.4"
     ])
     click.echo("✅ Contenedor hono-app-container arrancado")
     # 4.3. Conectar el contenedor al network tutor_default
@@ -370,10 +378,9 @@ def init_hono(repo: str, dir: str):
     ])
     click.echo("✅ Migraciones y seeders ejecutados dentro del contenedor")
 
-@undar_examen.command(name="initdb")
-def initdb():
+@undar_examen.command(name="init-db")
+def init_db():
     """Inicializa la base de datos con el usuario y contraseña del entorno."""
-    import json
 
     # Obtener la contraseña root de MySQL desde la configuración de Tutor
     result = subprocess.run(
@@ -384,9 +391,9 @@ def initdb():
     mysql_root_password = result.stdout.decode("utf-8").strip()
 
     comandos = [
-        "CREATE DATABASE IF NOT EXISTS mi_nueva_bd;",
-        "CREATE USER IF NOT EXISTS 'mi_usuario'@'%' IDENTIFIED BY 'mi_contraseña';",
-        "GRANT ALL PRIVILEGES ON *.* TO 'mi_usuario'@'%';",
+        "CREATE DATABASE IF NOT EXISTS undar_plugin_examen;",
+        "CREATE USER IF NOT EXISTS 'undar_user'@'%' IDENTIFIED BY 'ESW49Nc9z5kAZYtP';",
+        "GRANT ALL PRIVILEGES ON *.* TO 'undar_user'@'%';",
         "FLUSH PRIVILEGES;"
     ]
 
@@ -397,6 +404,35 @@ def initdb():
         ], check=True)
 
     click.echo("Base de datos inicializada ✅")
+
+
+
+    
+
+@undar_examen.command(name="remove-user")
+def remove_user():
+    """Remueve el usuario."""   
+
+    # Obtener la contraseña root de MySQL desde la configuración de Tutor
+    result = subprocess.run(
+        ["tutor", "config", "printvalue", "MYSQL_ROOT_PASSWORD"],
+        stdout=subprocess.PIPE,
+        check=True,
+    )
+    mysql_root_password = result.stdout.decode("utf-8").strip()
+
+    comandos = [
+        "DROP USER IF EXISTS 'undar_user'@'%';",
+        "FLUSH PRIVILEGES;"
+    ]
+
+    for comando in comandos:
+        subprocess.run([
+            "tutor", "local", "exec", "mysql", "--",
+            "mysql", "-u", "root", f"-p{mysql_root_password}", "-e", comando
+        ], check=True)
+
+    click.echo("Usuario removido ✅")
 
 @undar_examen.command(name="uninstall")
 def uninstall():
