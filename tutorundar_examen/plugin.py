@@ -10,6 +10,31 @@ import time
 
 from .__about__ import __version__
 
+def wait_for_mysql():
+    # Esperar a que MySQL esté disponible
+    click.echo("Esperando a que MySQL esté disponible...")
+    max_retries = 20
+    retry_interval = 3  # segundos
+    for i in range(max_retries):
+        try:
+            # Prueba la conexión al contenedor MySQL
+            result = subprocess.run(
+                ["docker", "exec", "tutor_local-mysql-1", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--silent"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False
+            )
+            if result.returncode == 0:
+                click.echo("✅ MySQL está disponible")
+                break
+        except Exception as e:
+            pass
+        click.echo(f"Esperando a MySQL... intento {i+1}/{max_retries}")
+        time.sleep(retry_interval)
+        if i == max_retries - 1:
+            click.echo("❌ No se pudo establecer conexión con MySQL después de varios intentos")
+            return
+
 from tutormfe.hooks import MFE_APPS
 @MFE_APPS.add()
 def _add_exams_mfe(mfes):
@@ -323,6 +348,13 @@ def init_hono(repo: str, dir: str):
     # 4.1. Eliminar contenedor hono-app-container si existe
     subprocess.check_call(["docker", "rm", "-f", "hono-app-container"])
     click.echo("✅ Contenedor hono-app-container eliminado")
+    # 5. Start en background
+    subprocess.check_call(["tutor", "local", "start", "-d"])
+    click.echo("✅ Entorno de hono-app levantado")
+
+    # Esperar a que MySQL esté disponible
+    wait_for_mysql()
+
     # Obtener la contraseña OpenEdx de MySQL desde la configuración de Tutor
     result = subprocess.run(
         ["tutor", "config", "printvalue", "OPENEDX_MYSQL_PASSWORD"],
@@ -330,57 +362,44 @@ def init_hono(repo: str, dir: str):
         check=True,
     )
     openedx_mysql_password = result.stdout.decode("utf-8").strip()
-    # 4.2. Arrancar el contenedor
+    # Arrancar el contenedor
     subprocess.check_call([
-        "docker", "run", "-d", "--name", "hono-app-container",
+        "docker", "run", "-d",
+        "--name", "hono-app-container",
+        "--network", "tutor_local_default",
         "-p", "3000:3000",
         "-e", "DATABASE_URL=mysql://undar_user:ESW49Nc9z5kAZYtP@tutor_local-mysql-1:3306/undar_plugin_examen",
         "-e", f"DATABASE_URL_OPEN_EDX=mysql://openedx:{openedx_mysql_password}@tutor_local-mysql-1:3306/openedx",
         "hono-app:19.0.4"
     ])
     click.echo("✅ Contenedor hono-app-container arrancado")
-    # 4.3. Conectar el contenedor al network tutor_default
-    subprocess.check_call(["docker", "network", "connect", "tutor_local_default", "hono-app-container"])
-    click.echo("✅ Contenedor hono-app-container conectado al network tutor_default")
-    # 5. Start en background
-    subprocess.check_call(["tutor", "local", "start", "-d"])
-    click.echo("✅ Entorno de hono-app levantado")
-    
-    # Esperar a que MySQL esté disponible
-    click.echo("Esperando a que MySQL esté disponible...")
-    max_retries = 20
-    retry_interval = 3  # segundos
-    for i in range(max_retries):
-        try:
-            # Prueba la conexión al contenedor MySQL
-            result = subprocess.run(
-                ["docker", "exec", "tutor_local-mysql-1", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--silent"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=False
-            )
-            if result.returncode == 0:
-                click.echo("✅ MySQL está disponible")
-                break
-        except Exception as e:
-            pass
-        click.echo(f"Esperando a MySQL... intento {i+1}/{max_retries}")
-        time.sleep(retry_interval)
-        if i == max_retries - 1:
-            click.echo("❌ No se pudo establecer conexión con MySQL después de varios intentos")
-            return
 
-    # 6. Ejecutar migraciones y seed dentro del contenedor
-    subprocess.check_call([
-        "docker", "exec", "hono-app-container",
-        "sh", "-c",
-        "npm run migrate:fresh:linux"
-    ])
-    click.echo("✅ Migraciones y seeders ejecutados dentro del contenedor")
+    click.echo("Verificando estado del contenedor hono-app-container...")
+    time.sleep(3)
+    result = subprocess.run(
+        ["docker", "inspect", "-f", "{{.State.Running}}", "hono-app-container"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False
+    )
+    if result.returncode != 0 or result.stdout.decode("utf-8").strip() != "true":
+        click.echo("❌ El contenedor hono-app-container no está corriendo")
+        
+        # Ver los logs para diagnosticar
+        click.echo("📋 Logs del contenedor:")
+        subprocess.run(["docker", "logs", "hono-app-container"])
+        
+        click.echo("\n❌ El contenedor se detuvo. Revisa los logs arriba para identificar el problema.")
+        return
+
+    click.echo("✅ Contenedor hono-app-container está corriendo")
 
 @undar_examen.command(name="init-db")
 def init_db():
     """Inicializa la base de datos con el usuario y contraseña del entorno."""
+
+    # Esperar a que MySQL esté disponible
+    wait_for_mysql()
 
     # Obtener la contraseña root de MySQL desde la configuración de Tutor
     result = subprocess.run(
@@ -405,7 +424,61 @@ def init_db():
 
     click.echo("Base de datos inicializada ✅")
 
+@undar_examen.command(name="reiniciar-db")
+def reiniciar_db():
+    """Reinicia la base de datos."""
 
+    # Esperar a que MySQL esté disponible
+    wait_for_mysql()
+
+    subprocess.check_call([
+        "docker", "exec", "hono-app-container",
+        "sh", "-c",
+        "npm run migrate:fresh:linux"
+    ])
+    click.echo("✅ Migraciones y seeders ejecutados dentro del contenedor")
+    
+@undar_examen.command(name="migrar-db")
+def migrar_db():
+    """Migrar la base de datos."""
+
+    # Esperar a que MySQL esté disponible
+    wait_for_mysql()
+
+    nombre_aleatorio = "migracion_" + str(uuid.uuid4())
+    subprocess.check_call([
+        "docker", "exec", "hono-app-container",
+        "sh", "-c",
+        "npx prisma migrate dev --name " + nombre_aleatorio
+    ])
+    click.echo("✅ Migraciones ejecutadas dentro del contenedor")
+    
+@undar_examen.command(name="seed-db")
+def seed_db():
+    """Ejecutar seeders."""
+
+    # Esperar a que MySQL esté disponible
+    wait_for_mysql()
+
+    subprocess.check_call([
+        "docker", "exec", "hono-app-container",
+        "sh", "-c",
+        "npm run seed"
+    ])
+    click.echo("✅ Seeders ejecutados dentro del contenedor")
+
+
+    
+@undar_examen.command(name="inicializar-plugin-undar")
+def inicializar_plugin_undar():
+    """Inicializa el plugin."""
+
+    subprocess.check_call(["tutor", "undar-examen", "init-examen"])
+    subprocess.check_call(["tutor", "undar-examen", "init-authoring"])
+    subprocess.check_call(["tutor", "undar-examen", "init-db"])
+    subprocess.check_call(["tutor", "undar-examen", "init-hono"])
+    subprocess.check_call(["tutor", "undar-examen", "reiniciar-db"])
+    click.echo("✅ Plugin inicializado ✅")
 
     
 
@@ -440,6 +513,7 @@ def uninstall():
     # Asegúrate de quitar el montaje
     subprocess.check_call(["tutor", "mounts", "remove", "./frontend-app-authoring"])
     click.echo("Montaje removido ✅")
+    subprocess.check_call(["tutor", "undar-examen", "remove-user"])
 
 # Llama a la función remove_mount si se deshabilita o desinstala el plugin
 hooks.Filters.CLI_COMMANDS.add_item(undar_examen)
