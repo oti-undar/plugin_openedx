@@ -9,7 +9,7 @@ Installation
 
 .. code-block:: bash
 
-    pip install git+https://github.com/DaveARG/tutor-contrib-undar-examen
+    pip install git+https://github.com/oti-undar/plugin_openedx
 
 Usage
 *****
