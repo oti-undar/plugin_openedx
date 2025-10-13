@@ -285,8 +285,31 @@ def init_authoring(repo: str, dir: str):
     click.echo("Entorno de authoring levantado ✅")
 
 @undar_examen.command(name="init-examen")
-def init_examen():
+@click.option(
+    "--repo",
+    default="https://github.com/oti-undar/frontend_openedx.git",
+    help="URL del repositorio a clonar",
+)
+@click.option(
+    "--dir",
+    default="frontend-examen",
+    help="Carpeta destino para el clone",
+)
+def init_examen(repo: str, dir: str):
     """Clona, monta y arranca el entorno de examen."""
+    # 1. Clonar
+    if not os.path.isdir(dir):
+        # Si la carpeta no existe, clona el repositorio y luego hace checkout de la etiqueta
+        subprocess.check_call(["git", "clone", "--branch", "main", repo, dir])
+        click.echo("✅ Repo Examen Clonado y Rama/Tag main seleccionada")
+    else:
+        # Si la carpeta existe, hace un pull para actualizar y luego hace checkout de la etiqueta
+        subprocess.check_call(["git", "-C", dir, "fetch", "--all"])
+        subprocess.check_call(["git", "-C", dir, "checkout", "main"])
+        subprocess.check_call(["git", "-C", dir, "pull"])
+        click.echo("✅ Repo Examen Actualizado y Rama/Tag main seleccionada")
+    # 2. Mount
+    subprocess.check_call(["tutor", "mounts", "add", f"./{dir}"])
     # 3. Stop
     subprocess.check_call(["tutor", "local", "stop"])
     # 4. Build
