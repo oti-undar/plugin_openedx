@@ -39,12 +39,12 @@ from tutormfe.hooks import MFE_APPS
 @MFE_APPS.add()
 def _add_exams_mfe(mfes):
     mfes["examen"] = {
-        "repository": "https://github.com/DaveARG/frontend-app-undar-examen.git",
+        "repository": "https://github.com/oti-undar/frontend_openedx.git",
         "port": 3100,
         "version": "main",  # opcional: rama o tag
     }
     mfes["authoring"] = {
-        "repository": "https://github.com/DaveARG/frontend-app-authoring.git",
+        "repository": "https://github.com/oti-undar/frontendAuth_openedx.git",
         "port": 2001,
         "version": "open-release/sumac.2",  # opcional: rama o tag
     }
@@ -253,7 +253,7 @@ def undar_examen():
 @undar_examen.command(name="init-authoring")
 @click.option(
     "--repo",
-    default="https://github.com/DaveARG/frontend-app-authoring.git",
+    default="https://github.com/oti-undar/frontendAuth_openedx.git",
     help="URL del repositorio a clonar",
 )
 @click.option(
@@ -301,7 +301,7 @@ def remove_readonly(func, path, excinfo):
 @undar_examen.command(name="init-hono")
 @click.option(
     "--repo",
-    default="https://github.com/DaveARG/hono-app.git",
+    default="https://github.com/oti-undar/backend_openedx.git",
     help="URL del repositorio a clonar",
 )
 @click.option(
