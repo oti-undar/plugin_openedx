@@ -361,22 +361,22 @@ def init_hono(repo: str, dir: str):
         subprocess.check_call(["git", "-C", target_dir, "pull"])
         click.echo("✅ Repo hono-app Actualizado y Rama/Tag master seleccionada")
     
-    # 2. Obtener la ruta del entorno de Tutor
-    result = subprocess.run(
-        ["tutor", "config", "printroot"],
-        stdout=subprocess.PIPE,
-        check=True,
-    )
-    tutor_root = result.stdout.decode("utf-8").strip()
+    # # 2. Obtener la ruta del entorno de Tutor
+    # result = subprocess.run(
+    #     ["tutor", "config", "printroot"],
+    #     stdout=subprocess.PIPE,
+    #     check=True,
+    # )
+    # tutor_root = result.stdout.decode("utf-8").strip()
     
-    # 2.5. Copiar código al contexto de build
-    plugin_build_path = os.path.join(tutor_root, "env", "plugins", "undar-examen", "build", "hono-app")
-    if os.path.exists(plugin_build_path):
-        shutil.rmtree(plugin_build_path, onerror=remove_readonly)
+    # # 2.5. Copiar código al contexto de build
+    # plugin_build_path = os.path.join(tutor_root, "env", "plugins", "undar-examen", "build", "hono-app")
+    # if os.path.exists(plugin_build_path):
+    #     shutil.rmtree(plugin_build_path, onerror=remove_readonly)
     
-    # Asegurarnos de que copiamos todo el contenido del repo
-    shutil.copytree(target_dir, plugin_build_path)
-    click.echo(f"📦 Código copiado desde {target_dir} al contexto de build: {plugin_build_path}")
+    # # Asegurarnos de que copiamos todo el contenido del repo
+    # shutil.copytree(target_dir, plugin_build_path)
+    # click.echo(f"📦 Código copiado desde {target_dir} al contexto de build: {plugin_build_path}")
     
     # 3. Stop
     subprocess.check_call(["tutor", "local", "stop"])
