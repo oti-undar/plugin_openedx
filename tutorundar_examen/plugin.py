@@ -263,20 +263,25 @@ def undar_examen():
 )
 def init_authoring(repo: str, dir: str):
     """Clona, monta y arranca el entorno de authoring."""
+    tutor_root = subprocess.check_output(["tutor", "config", "printroot"]).decode().strip()
+    mfe_build_dir = os.path.join(tutor_root, "env", "plugins", "undar-examen", "build")
+    target_dir = os.path.join(mfe_build_dir, dir)
+    os.makedirs(mfe_build_dir, exist_ok=True)
+
     # 1. Clonar
-    if not os.path.isdir(dir):
+    if not os.path.isdir(target_dir):
         # Si la carpeta no existe, clona el repositorio y luego hace checkout de la etiqueta
-        subprocess.check_call(["git", "clone", "--branch", "open-release/sumac.2", repo, dir])
+        subprocess.check_call(["git", "clone", "--branch", "open-release/sumac.2", repo, target_dir])
         click.echo("✅ Repo Authoring Clonado y Rama/Tag open-release/sumac.2 seleccionada")
     else:
         # Si la carpeta existe, hace un pull para actualizar y luego hace checkout de la etiqueta
-        subprocess.check_call(["git", "-C", dir, "fetch", "--all"])
-        subprocess.check_call(["git", "-C", dir, "checkout", "open-release/sumac.2"])
-        subprocess.check_call(["git", "-C", dir, "pull"])
+        subprocess.check_call(["git", "-C", target_dir, "fetch", "--all"])
+        subprocess.check_call(["git", "-C", target_dir, "checkout", "open-release/sumac.2"])
+        subprocess.check_call(["git", "-C", target_dir, "pull"])
         click.echo("✅ Repo Authoring Actualizado y Rama/Tag open-release/sumac.2 seleccionada")
     # 2. Mount
-    subprocess.check_call(["tutor", "mounts", "add", os.path.abspath(dir)])
-    click.echo(f"✅ Mount agregado: {os.path.abspath(dir)}")
+    subprocess.check_call(["tutor", "mounts", "add", os.path.abspath(target_dir)])
+    click.echo(f"✅ Mount agregado: {os.path.abspath(target_dir)}")
     # 3. Stop
     subprocess.check_call(["tutor", "local", "stop"])
     # 4. Build
@@ -298,20 +303,24 @@ def init_authoring(repo: str, dir: str):
 )
 def init_examen(repo: str, dir: str):
     """Clona, monta y arranca el entorno de examen."""
+    tutor_root = subprocess.check_output(["tutor", "config", "printroot"]).decode().strip()
+    mfe_build_dir = os.path.join(tutor_root, "env", "plugins", "undar-examen", "build")
+    target_dir = os.path.join(mfe_build_dir, dir)
+    os.makedirs(mfe_build_dir, exist_ok=True)
     # 1. Clonar
-    if not os.path.isdir(dir):
+    if not os.path.isdir(target_dir):
         # Si la carpeta no existe, clona el repositorio y luego hace checkout de la etiqueta
-        subprocess.check_call(["git", "clone", "--branch", "main", repo, dir])
+        subprocess.check_call(["git", "clone", "--branch", "main", repo, target_dir])
         click.echo("✅ Repo Examen Clonado y Rama/Tag main seleccionada")
     else:
         # Si la carpeta existe, hace un pull para actualizar y luego hace checkout de la etiqueta
-        subprocess.check_call(["git", "-C", dir, "fetch", "--all"])
-        subprocess.check_call(["git", "-C", dir, "checkout", "main"])
-        subprocess.check_call(["git", "-C", dir, "pull"])
+        subprocess.check_call(["git", "-C", target_dir, "fetch", "--all"])
+        subprocess.check_call(["git", "-C", target_dir, "checkout", "main"])
+        subprocess.check_call(["git", "-C", target_dir, "pull"])
         click.echo("✅ Repo Examen Actualizado y Rama/Tag main seleccionada")
     # 2. Mount
-    subprocess.check_call(["tutor", "mounts", "add", os.path.abspath(dir)])
-    click.echo(f"✅ Mount agregado: {os.path.abspath(dir)}")
+    subprocess.check_call(["tutor", "mounts", "add", os.path.abspath(target_dir)])
+    click.echo(f"✅ Mount agregado: {os.path.abspath(target_dir)}")
     # 3. Stop
     subprocess.check_call(["tutor", "local", "stop"])
     # 4. Build
@@ -336,16 +345,20 @@ def remove_readonly(func, path, excinfo):
 )
 def init_hono(repo: str, dir: str):
     """Clona, monta y arranca el entorno de hono-app."""
+    tutor_root = subprocess.check_output(["tutor", "config", "printroot"]).decode().strip()
+    mfe_build_dir = os.path.join(tutor_root, "env", "plugins", "undar-examen", "build")
+    target_dir = os.path.join(mfe_build_dir, dir)
+    os.makedirs(mfe_build_dir, exist_ok=True)
     # 1. Clonar
-    if not os.path.isdir(dir):
+    if not os.path.isdir(target_dir):
         # Si la carpeta no existe, clona el repositorio y luego hace checkout de la etiqueta
-        subprocess.check_call(["git", "clone", "--branch", "master", repo, dir])
+        subprocess.check_call(["git", "clone", "--branch", "master", repo, target_dir])
         click.echo("✅ Repo hono-app Clonado y Rama/Tag master seleccionada")
     else:
         # Si la carpeta existe, hace un pull para actualizar y luego hace checkout de la etiqueta
-        subprocess.check_call(["git", "-C", dir, "fetch", "--all"])
-        subprocess.check_call(["git", "-C", dir, "checkout", "master"])
-        subprocess.check_call(["git", "-C", dir, "pull"])
+        subprocess.check_call(["git", "-C", target_dir, "fetch", "--all"])
+        subprocess.check_call(["git", "-C", target_dir, "checkout", "master"])
+        subprocess.check_call(["git", "-C", target_dir, "pull"])
         click.echo("✅ Repo hono-app Actualizado y Rama/Tag master seleccionada")
     
     # 2. Obtener la ruta del entorno de Tutor
@@ -362,8 +375,8 @@ def init_hono(repo: str, dir: str):
         shutil.rmtree(plugin_build_path, onerror=remove_readonly)
     
     # Asegurarnos de que copiamos todo el contenido del repo
-    shutil.copytree(dir, plugin_build_path)
-    click.echo(f"📦 Código copiado desde {dir} al contexto de build: {plugin_build_path}")
+    shutil.copytree(target_dir, plugin_build_path)
+    click.echo(f"📦 Código copiado desde {target_dir} al contexto de build: {plugin_build_path}")
     
     # 3. Stop
     subprocess.check_call(["tutor", "local", "stop"])
