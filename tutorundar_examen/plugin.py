@@ -275,7 +275,8 @@ def init_authoring(repo: str, dir: str):
         subprocess.check_call(["git", "-C", dir, "pull"])
         click.echo("✅ Repo Authoring Actualizado y Rama/Tag open-release/sumac.2 seleccionada")
     # 2. Mount
-    subprocess.check_call(["tutor", "mounts", "add", f"./{dir}"])
+    subprocess.check_call(["tutor", "mounts", "add", os.path.abspath(dir)])
+    click.echo(f"✅ Mount agregado: {os.path.abspath(dir)}")
     # 3. Stop
     subprocess.check_call(["tutor", "local", "stop"])
     # 4. Build
@@ -309,7 +310,8 @@ def init_examen(repo: str, dir: str):
         subprocess.check_call(["git", "-C", dir, "pull"])
         click.echo("✅ Repo Examen Actualizado y Rama/Tag main seleccionada")
     # 2. Mount
-    subprocess.check_call(["tutor", "mounts", "add", f"./{dir}"])
+    subprocess.check_call(["tutor", "mounts", "add", os.path.abspath(dir)])
+    click.echo(f"✅ Mount agregado: {os.path.abspath(dir)}")
     # 3. Stop
     subprocess.check_call(["tutor", "local", "stop"])
     # 4. Build
