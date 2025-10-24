@@ -3,6 +3,17 @@ undar-examen plugin for `Tutor <https://docs.tutor.edly.io>`_
 
 Plugin Open Edx para Evaluación por Competencias en Educación Musical y Artes, personalizado para el entorno de la **UNDAR**, permitiendo desplegar, montar y gestionar los entornos **Authoring**, **Examen** y **Hono (Backend)** desde comandos personalizados de Tutor.
 
+Equipo de Investigadores Docentes de la UNDAR:
+
+Aland Bravo Vecorena
+ORCID: 0000-0002-1802-8402
+
+Jorge Gadi Marcellini Morales
+ORCID: 0000-0003-1952-6988
+
+Fabio Rodríguez Meléndez
+ORCID: 0000-0003-4533-5595
+
 ---
 
 📦 Instalación
