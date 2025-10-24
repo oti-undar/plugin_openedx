@@ -1,7 +1,7 @@
 undar-examen plugin for `Tutor <https://docs.tutor.edly.io>`_
 =============================================================
 
-Plugin para integrar el entorno de **UNDAR** con **Open edX**, permitiendo desplegar, montar y gestionar los entornos **Authoring**, **Examen** y **Hono (Backend)** desde comandos personalizados de Tutor.
+Plugin Open Edx para Evaluación por Competencias en Educación Musical y Artes, personalizado para el entorno de la **UNDAR**, permitiendo desplegar, montar y gestionar los entornos **Authoring**, **Examen** y **Hono (Backend)** desde comandos personalizados de Tutor.
 
 ---
 
