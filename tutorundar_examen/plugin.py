@@ -192,7 +192,6 @@ hooks.Filters.ENV_TEMPLATE_TARGETS.add_items(
     [
         ("undar-examen/build", "plugins"),
         ("undar-examen/apps", "plugins"),
-        ("caddy/hono-app.part", "apps/caddy/hono-app.part"),
     ],
 )
 
@@ -392,7 +391,7 @@ def init_hono(repo: str, dir: str):
         "-p", "3000:3000",
         "-e", "DATABASE_URL=mysql://undar_user:ESW49Nc9z5kAZYtP@tutor_local-mysql-1:3306/undar_plugin_examen",
         "-e", f"DATABASE_URL_OPEN_EDX=mysql://openedx:{openedx_mysql_password}@tutor_local-mysql-1:3306/openedx",
-        "hono-app:19.0.10"
+        "hono-app:19.0.11"
     ])
     click.echo("✅ Contenedor hono-app-container arrancado")
 
@@ -415,9 +414,6 @@ def init_hono(repo: str, dir: str):
         return
 
     click.echo("✅ Contenedor hono-app-container está corriendo")
-    click.echo("🔄 Reiniciando Caddy para aplicar la configuración de Hono-App...")
-    subprocess.check_call(["tutor", "local", "restart", "caddy"])
-    click.echo("✅ Caddy reiniciado. Hono-App accesible en http://api.aulavirtual.undar.edu.pe")
 
 @undar_examen.command(name="init-db")
 def init_db():
