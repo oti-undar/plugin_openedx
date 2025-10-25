@@ -1,0 +1,12 @@
+# Exponer la app Hono completa en un subdominio dedicado
+api.aulavirtual.{{ LMS_HOST }}{$default_site_port} {
+    import proxy "hono-app-container:3000"
+    
+    encode gzip
+
+    handle_path /* {
+        request_body {
+            max_size 250MB
+        }
+    }
+}
