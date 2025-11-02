@@ -137,15 +137,16 @@ Grupo de comandos personalizados para gestionar entornos de UNDAR (examen, autho
 
 ---
 
-🧩 5. Reiniciar base de datos
+🧩 5. Truncar base de datos
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-    tutor undar-examen reiniciar-db
+    tutor undar-examen truncar-db
 
 **Qué hace:**
-Ejecuta ``npm run migrate:fresh:linux`` dentro del contenedor ``hono-app-container``, aplicando migraciones limpias y seeders.
+1. Elimina la base de datos ``undar_plugin_examen``.
+2. Recrea la base de datos ``undar_plugin_examen``.
 
 ---
 
@@ -157,7 +158,7 @@ Ejecuta ``npm run migrate:fresh:linux`` dentro del contenedor ``hono-app-contain
     tutor undar-examen migrar-db
 
 **Qué hace:**
-Ejecuta un comando ``npx prisma migrate dev`` dentro del contenedor ``hono-app-container`` con un nombre de migración aleatorio.
+Ejecuta un comando ``npx prisma migrate deploy`` dentro del contenedor ``hono-app-container``.
 
 ---
 
@@ -187,7 +188,9 @@ Ejecuta en orden los siguientes comandos:
 2. ``init-authoring``
 3. ``init-db``
 4. ``init-hono``
-5. ``reiniciar-db``
+5. ``truncar-db``
+6. ``migrar-db``
+7. ``seed-db``
 
 🔁 **Resultado:** el entorno UNDAR (frontend, authoring, backend y base de datos) queda completamente listo.
 
