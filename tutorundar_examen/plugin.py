@@ -7,6 +7,7 @@ import importlib_resources
 from tutor import hooks
 import stat
 import time
+import uuid
 
 from .__about__ import __version__
 
