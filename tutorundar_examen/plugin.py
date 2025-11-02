@@ -7,7 +7,6 @@ import importlib_resources
 from tutor import hooks
 import stat
 import time
-import uuid
 
 from .__about__ import __version__
 
@@ -392,7 +391,7 @@ def init_hono(repo: str, dir: str):
         "-p", "3000:3000",
         "-e", "DATABASE_URL=mysql://undar_user:ESW49Nc9z5kAZYtP@tutor_local-mysql-1:3306/undar_plugin_examen",
         "-e", f"DATABASE_URL_OPEN_EDX=mysql://openedx:{openedx_mysql_password}@tutor_local-mysql-1:3306/openedx",
-        "hono-app:19.0.12"
+        "hono-app:19.0.13"
     ])
     click.echo("✅ Contenedor hono-app-container arrancado")
 
@@ -446,19 +445,33 @@ def init_db():
 
     click.echo("Base de datos inicializada ✅")
 
-@undar_examen.command(name="reiniciar-db")
-def reiniciar_db():
-    """Reinicia la base de datos."""
+@undar_examen.command(name="truncar-db")
+def truncar_db():
+    """Trunca la base de datos."""
 
     # Esperar a que MySQL esté disponible
     wait_for_mysql()
 
-    subprocess.check_call([
-        "docker", "exec", "hono-app-container",
-        "sh", "-c",
-        "npm run migrate:fresh:linux"
-    ])
-    click.echo("✅ Migraciones y seeders ejecutados dentro del contenedor")
+    # Obtener la contraseña root de MySQL desde la configuración de Tutor
+    result = subprocess.run(
+        ["tutor", "config", "printvalue", "MYSQL_ROOT_PASSWORD"],
+        stdout=subprocess.PIPE,
+        check=True,
+    )
+    mysql_root_password = result.stdout.decode("utf-8").strip()
+
+    comandos = [
+        "DROP DATABASE IF EXISTS undar_plugin_examen;",
+        "CREATE DATABASE IF NOT EXISTS undar_plugin_examen;",
+    ]
+
+    for comando in comandos:
+        subprocess.run([
+            "tutor", "local", "exec", "mysql", "--",
+            "mysql", "-u", "root", f"-p{mysql_root_password}", "-e", comando
+        ], check=True)
+
+    click.echo("Base de datos truncada ✅")
     
 @undar_examen.command(name="migrar-db")
 def migrar_db():
@@ -467,11 +480,10 @@ def migrar_db():
     # Esperar a que MySQL esté disponible
     wait_for_mysql()
 
-    nombre_aleatorio = "migracion_" + str(uuid.uuid4())
     subprocess.check_call([
         "docker", "exec", "hono-app-container",
         "sh", "-c",
-        "npx prisma migrate dev --name " + nombre_aleatorio
+        "npx prisma migrate deploy"
     ])
     click.echo("✅ Migraciones ejecutadas dentro del contenedor")
     
@@ -499,7 +511,8 @@ def inicializar_plugin_undar():
     subprocess.check_call(["tutor", "undar-examen", "init-authoring"])
     subprocess.check_call(["tutor", "undar-examen", "init-db"])
     subprocess.check_call(["tutor", "undar-examen", "init-hono"])
-    subprocess.check_call(["tutor", "undar-examen", "reiniciar-db"])
+    subprocess.check_call(["tutor", "undar-examen", "migrar-db"])
+    subprocess.check_call(["tutor", "undar-examen", "seed-db"])
     click.echo("✅ Plugin inicializado ✅")
 
     
