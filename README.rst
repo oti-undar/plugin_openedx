@@ -163,6 +163,7 @@ Grupo de comandos personalizados para gestionar entornos de UNDAR (examen, autho
     tutor undar-examen truncar-db
 
 **Qué hace:**
+
 1. Elimina la base de datos ``undar_plugin_examen``.
 2. Recrea la base de datos ``undar_plugin_examen``.
 
