@@ -349,6 +349,9 @@ def init_hono(repo: str, dir: str):
     mfe_build_dir = os.path.join(tutor_root, "env", "plugins", "undar-examen", "build")
     target_dir = os.path.join(mfe_build_dir, dir)
     os.makedirs(mfe_build_dir, exist_ok=True)
+
+    examenes_dir = os.path.join(mfe_build_dir, "examenes")
+    os.makedirs(examenes_dir, exist_ok=True)
     # 1. Clonar
     if not os.path.isdir(target_dir):
         # Si la carpeta no existe, clona el repositorio y luego hace checkout de la etiqueta
@@ -391,7 +394,8 @@ def init_hono(repo: str, dir: str):
         "-p", "3000:3000",
         "-e", "DATABASE_URL=mysql://undar_user:ESW49Nc9z5kAZYtP@tutor_local-mysql-1:3306/undar_plugin_examen",
         "-e", f"DATABASE_URL_OPEN_EDX=mysql://openedx:{openedx_mysql_password}@tutor_local-mysql-1:3306/openedx",
-        "hono-app:19.0.13"
+        "-v", f"{examenes_dir}:/app/public/examenes",
+        "hono-app:19.0.14"
     ])
     click.echo("✅ Contenedor hono-app-container arrancado")
 
