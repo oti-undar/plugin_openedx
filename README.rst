@@ -50,6 +50,24 @@ Una vez habilitado, el plugin agrega el grupo de comandos:
 
     tutor undar-examen
 
+
+📋 Orden de ejecución
+-----------------------
+
+Primero debe inicializar el plugin UNDAR:
+
+.. code-block:: bash
+
+    tutor undar-examen inicializar-plugin-undar
+
+Luego debe dar permiso de escritura para subir los archivos de los examenes para que puedan persistir en caso se realicen actualizaciones en el backend:
+
+.. code-block:: bash
+
+    sudo chown -R 1001:1001 "$(tutor config printroot)/env/plugins/undar-examen/build/examenes"
+
+---
+
 Grupo de comandos personalizados para gestionar entornos de UNDAR (examen, authoring, hono, base de datos, etc).
 
 ---
