@@ -3,6 +3,8 @@ undar-examen plugin for `Tutor <https://docs.tutor.edly.io>`_
 
 Plugin Open Edx para Evaluación por Competencias en Educación Musical y Artes, personalizado para el entorno de la **UNDAR**, permitiendo desplegar, montar y gestionar los entornos **Authoring**, **Examen** y **Hono (Backend)** desde comandos personalizados de Tutor.
 
+Los autores del proyecto agradecen el financiamiento otorgado vía el  III Concurso de Proyectos de Investigación Humanística, Científica, tecnológica, Artística y Musical para Docentes, con fondo concursable de la UNDAR -2025. Para mayor información ver la Resolución de Comisión Organizadora N° 151-2025-CO-UNDAR, en enlace: https://cdn.www.gob.pe/uploads/document/file/8141067/6818197-resolucion-de-comision-organizadora-n-151-2025-co-undar-formato-de-realizacion-del-iii-concurso-de-proyectos-de-investigacion.pdf?v=1748548083
+
 Equipo de Investigadores Docentes de la UNDAR:
 
 Aland Bravo Vecorena
