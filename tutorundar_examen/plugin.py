@@ -395,7 +395,7 @@ def init_hono(repo: str, dir: str):
         "-e", "DATABASE_URL=mysql://undar_user:ESW49Nc9z5kAZYtP@tutor_local-mysql-1:3306/undar_plugin_examen",
         "-e", f"DATABASE_URL_OPEN_EDX=mysql://openedx:{openedx_mysql_password}@tutor_local-mysql-1:3306/openedx",
         "-v", f"{examenes_dir}:/app/public/examenes",
-        "hono-app:19.0.14"
+        f"hono-app:{__version__}"
     ])
     click.echo("✅ Contenedor hono-app-container arrancado")
 
