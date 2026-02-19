@@ -285,7 +285,7 @@ def init_authoring(repo: str, dir: str):
     # 3. Stop
     subprocess.check_call(["tutor", "local", "stop"])
     # 4. Build
-    subprocess.check_call(["tutor", "images", "build", "mfe"])
+    #subprocess.check_call(["tutor", "images", "build", "mfe"])
     # 5. Start en background
     subprocess.check_call(["tutor", "local", "start", "-d"])
     click.echo("Entorno de authoring levantado ✅")
@@ -324,7 +324,7 @@ def init_examen(repo: str, dir: str):
     # 3. Stop
     subprocess.check_call(["tutor", "local", "stop"])
     # 4. Build
-    subprocess.check_call(["tutor", "images", "build", "mfe", "--no-cache"])
+    #subprocess.check_call(["tutor", "images", "build", "mfe", "--no-cache"])
     # 5. Start en background
     subprocess.check_call(["tutor", "local", "start", "-d"])
     click.echo("Entorno de examen levantado ✅")
